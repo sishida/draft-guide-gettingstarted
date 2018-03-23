@@ -1,0 +1,231 @@
+//  Copyright (c) 2018 IBM Corporation and others.
+// Licensed under Creative Commons Attribution-NoDerivatives
+// 4.0 International (CC BY-ND 4.0)
+//   https://creativecommons.org/licenses/by-nd/4.0/
+//
+// Contributors:
+//     IBM Corporation
+//
+:projectid: rest-intro
+:page-layout: guide
+:page-duration: 30 minutes
+:page-releasedate: 2017-09-19
+:page-description: Learn how to create a REST service with JAX-RS, JSON-P, and Open Liberty.
+:page-tags: ['REST', 'Getting Started']
+:page-related-guides: ['rest-client-java', 'rest-client-angularjs']
+:page-permalink: /guides/{projectid}
+//:common-includes: https://raw.githubusercontent.com/OpenLiberty/guides-common/master
+:common-includes: ../guides-common
+:seo-title: Test
+:seo-description: description
+= Getting started with Open Liberty Java app server
+
+Learn how to run and update an app on the Open Liberty Java app server using Maven.
+
+== What you'll learn
+
+You will learn how to run a simple REST service that exposes the JVM's system properties on an Open Liberty server using Maven. Maven is an efficient way to start developing apps or microservices for Open Liberty. Using Maven, you will create a simple microservice that collects basic system properties from our laptop and displays them on an endpoint that you can access in your web browser. The microservice uses JAX-RS and JSON-P to provide the endpoint for accessing the system properties. After running this simple microservice on an Open Liberty server, you will create another class to add a second RESTful endpoint that collects metrics about the running microservice.
+
+
+//include::{common-includes}/gitclone.adoc[]
+
+== Cloning and running the app on an Open Liberty server
+
+In a terminal, run the following commands to clone a simple app:
+
+[subs="attributes"]
+----
+git clone https://github.com/openliberty/guide-{projectid}.git
+cd guide-{projectid}
+----
+
+The `start` directory contains the starting project that you can use to begin. The `finish` directory contains the finished project, which is what you will build.
+
+// start directory needs to contain the same as the finish but without the class modification in the next section.
+
+Change into the `start` directory:
+
+----
+cd start
+----
+
+Try compiling and running the app to see what it does:
+
+----
+mvn install liberty:run-server
+----
+
+//Currently the sample is not working like this https://github.com/OpenLiberty/sample-getting-started/issues/16
+
+The `mvn install` part of the command (Maven goal) compiles the application and downloads the latest stable release of the Open Liberty runtime to a local cache. The `liberty:run-server` goal creates and starts a server called `defaultServer` and deploys the application to the server.
+
+To see what the app does, visit the following URL in a web browser:
+
+[source,role="no_copy"]
+----
+http://localhost:9080/system/properties
+----
+
+The app gets the system properties for your laptop and displays them on a simple webpage at that URL endpoint:
+
+//example here
+
+
+== Updating the app code without restarting the server
+
+The application is configured as a 'loose application'. This means that Open Liberty runs the application from the `target/classes` directory, which is where the compiler puts the classes before compiling them into a WAR file. Liberty monitors the `classes` directory of the running application. Whenever a class is updated, Liberty automatically updates the application. You don't need to repeatedly restart the server or manually redeploy your app to see the effects of every update you make to your code. You can configure your IDE (such as VSCode with xxxx extension or Eclipse with Open Liberty Tools) to trigger a Maven build when you save a file. [LC: But VSCode requires the pom.xml to be in the project root... :'( ]
+
+[LC: I'm a bit confused about what the interaction is between VSCode language pack and Maven now - I couldn't get this stuff to work without some Maven or Java plugin to VSCode but now I can't remember/find which one.]
+
+Without 'loose application' enabled for an app, Maven would compile the app and put WAR file in the server's `apps` directory (`target/liberty/usr/servers/defaultServer/apps`) so that Open Liberty can load the application. When 'loose application' is enabled, Maven places a `.war.xml` file (for this app it's called `rest.war.xml`) in the `apps` directory instead of the compiled WAR file. The `rest.war.xml` file directs Open Liberty to find the application classes in the `target/classes` directory instead of the `apps` directory.
+
+Take a look at the `pom.xml` for the sample app. The `<looseApplication>` setting is set to `true` so that Open Liberty checks for updated classes in the `target/classes` directory.
+
+CHANGE A CLASS HERE
+
+
+
+Check the console output in the terminal where you ran the `mvn` command. The output updates each time you save updates to a file to show that the server has detected the changes and updated the running application:
+
+----
+[INFO] [AUDIT   ] CWWKT0017I: Web application removed (default_host): http://192.168.0.31:9080/LibertyProject/
+[INFO] [AUDIT   ] CWWKZ0009I: The application rest has stopped successfully.
+[INFO] [AUDIT   ] CWWKT0016I: Web application available (default_host): http://192.168.0.31:9080/LibertyProject/
+[INFO] [AUDIT   ] CWWKZ0003I: The application rest updated in 0.172 seconds.
+----
+
+In your browser, visit http://localhost:9080/health. The webpage displays the current health of the single microservice and the application that contains the microservice:
+
+----
+{"checks":[{"data":{},"name":"PropertiesResource","state":"UP"}],"outcome":"UP"}
+----
+
+
+userName="admin" userPassword="adminpwd"
+
+
+== Section 2
+
+
+
+
+== Section 3
+
+
+
+
+== Testing the service
+
+You could test this service manually by starting a server and pointing a web browser at the
+`\http://localhost:9080/LibertyProject/System/properties` URL. Automated tests are a much better
+approach because they will trigger a failure if a change introduces a bug. JUnit and the JAX-RS Client
+API provide a very simple environment to test the application.
+
+You can write tests for the individual units of code outside of a running application server, or they
+can be written to call the application server directly. In this example, you will create a test that
+does the latter.
+
+Create the test class in the `src/test/java/it/io/openliberty/guides/rest/EndpointTest.java` file:
+
+[source,java]
+----
+//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=**;!comment]
+----
+
+This test class has more lines of code than the resource implementation. This situation is common.
+The test method is indicated with the `@Test` annotation.
+
+The test code needs to know some information about the application in order to make requests. The server
+port and the application context root are key, and are dictated by the server configuration. While this
+information can be hardcoded, it is better to specify it in a single place like the Maven `pom.xml`
+file. Open the `pom.xml` file to see how the application information is provided in the file:
+
+[source,xml,indent=0,role="no_copy"]
+----
+//include::finish/pom.xml[lines=15..17]
+----
+
+These Maven properties are then passed to the Java test program as a series of system properties in
+the `pom.xml` file:
+
+[source,xml,indent=0,role="no_copy"]
+----
+//include::finish/pom.xml[lines=179..182]
+----
+
+Getting the values to create a representation of the URL is simple. The test class uses the properties
+to get the application details:
+
+[source,java,indent=0,role="no_copy"]
+----
+//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=systemProperties]
+----
+
+The JAX-RS client can be used to make the REST call and convert the payload to and from a JSON-P
+representation. To get the JAX-RS client to do the conversion, the client needs to have the `JsrJsonpProvider`
+class registered with it by calling the `register` method and providing the `Class` object for the
+`JsrJsonpProvider` class:
+
+[source,java,indent=0,role="no_copy"]
+----
+//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=clientSetup]
+----
+
+To call the JAX-RS service using the JAX-RS client, you first create a `WebTarget` object by calling
+the `target` method providing the URL. To cause the HTTP request to occur first the `request` method
+on `WebTarget` and then the `get` method on the returned object need to be called. The `get` method
+call is a synchronous call that blocks until a response is received. This call returns a `Response`
+object, which can be interrogated to determine whether the request was successful:
+
+[source,java,indent=0,role="no_copy"]
+----
+//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=request]
+----
+
+The first thing to check is that a `200` response was received. The JUnit `assertEquals` method can
+be used for this. The first parameter is the error message that indicates why the test failed. The
+second parameter is the expected response code, and the third is the actual response code. It is
+important to associate the expected response code with the second parameter and the actual response
+with the third parameter. Otherwise, the error messages from JUnit will claim that the actual response
+is the expected one, which can cause confusion:
+
+[source,java,indent=0,role="no_copy"]
+----
+//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=response]
+----
+
+Check the response body to ensure it returned the right information. Since the client and the server
+are running on the same machine, it is reasonable to expect that the system properties for the local
+and remote JVM would be the same. In this case, an assertion is made that the `os.name` system property
+for both JVMs is the same. You could write additional assertions to check for more values:
+
+[source,java,indent=0,role="no_copy"]
+----
+//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=body]
+----
+
+To rebuild, run the tests, and see that the test passes, run the command: `mvn install`. The Maven
+build takes a little longer than before the test existed, but expect to see the following information
+in the output:
+
+[source,role="no_copy"]
+----
+-------------------------------------------------------
+ T E S T S
+-------------------------------------------------------
+Running it.io.openliberty.guides.rest.EndpointTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.884 sec - in it.io.openliberty.guides.rest.EndpointTest
+
+Results :
+
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+----
+
+To see whether the tests detect a failure, add an assertion that you know fails, or change the existing
+assertion to a constant value that doesn't match the `os.name` system property.
+
+== Great work! You're done!
+
+You developed a REST service by using JAX-RS, JSON-P, and Liberty.
+
+include::{common-includes}/finish.adoc[]

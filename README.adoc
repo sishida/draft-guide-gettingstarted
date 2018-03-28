@@ -66,166 +66,140 @@ To see what the app does, visit the following URL in a web browser:
 http://localhost:9080/system/properties
 ----
 
-The app gets the system properties for your laptop and displays them on a simple webpage at that URL endpoint:
+The app gets the system properties for your laptop and displays them on a simple webpage at that URL endpoint; for example like this:
 
-//example here
-
+[source,role="no_copy"]
+----
+{"java.vendor":"Oracle Corporation","default.https.port":"9443","sun.java.launcher":"SUN_STANDARD","sun.management.compiler":"HotSpot 64-Bit Tiered Compilers","shared.resource.dir":"/Users/laura/github/lauracowen/sample-getting-started/finish/target/liberty/wlp/usr/shared/resources/","os.name":"Mac OS X","sun.boot.class.path":"/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/sunrsasign.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk
+...
+----
 
 == Updating the app code without restarting the server
 
-The application is configured as a 'loose application'. This means that Open Liberty runs the application from the `target/classes` directory, which is where the compiler puts the classes before compiling them into a WAR file. Liberty monitors the `classes` directory of the running application. Whenever a class is updated, Liberty automatically updates the application. You don't need to repeatedly restart the server or manually redeploy your app to see the effects of every update you make to your code. You can configure your IDE (such as VSCode with xxxx extension or Eclipse with Open Liberty Tools) to trigger a Maven build when you save a file. [LC: But VSCode requires the pom.xml to be in the project root... :'( ]
+The application is configured as a 'loose application'. This means that Open Liberty runs the application from the `target/classes` directory, which is where the compiler puts the classes before compiling them into a WAR file. Liberty monitors the `classes` directory of the running application. Whenever a class is updated, Liberty automatically updates the application. You don't need to repeatedly restart the server or manually redeploy your app to see the effects of every update you make to your code. You can configure your IDE (such as VSCode with xxxx extension or Eclipse with Open Liberty Tools) to trigger a Maven build when you save a file.
 
-[LC: I'm a bit confused about what the interaction is between VSCode language pack and Maven now - I couldn't get this stuff to work without some Maven or Java plugin to VSCode but now I can't remember/find which one.]
+(Using VSCode? Make sure you've installed the Java Extensions and you open the `start` folder directly in the VSCode workspace so that the `pom.xml` is in the 'root' of the workspace project.)
 
 Without 'loose application' enabled for an app, Maven would compile the app and put WAR file in the server's `apps` directory (`target/liberty/usr/servers/defaultServer/apps`) so that Open Liberty can load the application. When 'loose application' is enabled, Maven places a `.war.xml` file (for this app it's called `rest.war.xml`) in the `apps` directory instead of the compiled WAR file. The `rest.war.xml` file directs Open Liberty to find the application classes in the `target/classes` directory instead of the `apps` directory.
 
 Take a look at the `pom.xml` for the sample app. The `<looseApplication>` setting is set to `true` so that Open Liberty checks for updated classes in the `target/classes` directory.
 
-CHANGE A CLASS HERE
-
-
+With the application still running, try making a minor edit to the `SystemResource.java` class. Add a comment somewhere in the class then save the file. [LC: Could so with something better than this but adding the runtime exception at this point is a bit negative and a bit of a tangent.]
 
 Check the console output in the terminal where you ran the `mvn` command. The output updates each time you save updates to a file to show that the server has detected the changes and updated the running application:
 
 ----
-[INFO] [AUDIT   ] CWWKT0017I: Web application removed (default_host): http://192.168.0.31:9080/LibertyProject/
-[INFO] [AUDIT   ] CWWKZ0009I: The application rest has stopped successfully.
-[INFO] [AUDIT   ] CWWKT0016I: Web application available (default_host): http://192.168.0.31:9080/LibertyProject/
-[INFO] [AUDIT   ] CWWKZ0003I: The application rest updated in 0.172 seconds.
+[INFO] [AUDIT   ] CWWKT0017I: Web application removed (default_host): http://lauras-mbp.hursley.uk.ibm.com:9080/
+[INFO] [AUDIT   ] CWWKZ0009I: The application io.openliberty.sample.getting.started has stopped successfully.
+[INFO] [AUDIT   ] CWWKT0016I: Web application available (default_host): http://lauras-mbp.hursley.uk.ibm.com:9080/
+[INFO] [AUDIT   ] CWWKZ0003I: The application io.openliberty.sample.getting.started updated in 0.136 seconds.
+---- 
+
+
+== Open Liberty logs
+
+You can find the logs for the application's Open Liberty server in the `target/liberty/wlp/usr/servers/SampleAppServer/logs` directory, which is created automatically when the server first starts. There should currently be `console.log` and `messages.log` files in the directory which contain the console output of the running app so far.
+
+Now, force a RuntimeException by editing the `SystemResource.java` class: Insert the following `if` statement at the very start of the `getProperties()` method:
+
+[source,java,indent=0]
+----
+if (System.getProperties() != null) {
+   throw new RuntimeException("My forced exception");
+	}
 ----
 
-In your browser, visit http://localhost:9080/health. The webpage displays the current health of the single microservice and the application that contains the microservice:
-
-----
-{"checks":[{"data":{},"name":"PropertiesResource","state":"UP"}],"outcome":"UP"}
-----
-
-
-userName="admin" userPassword="adminpwd"
-
-
-== Section 2
-
-
-
-
-== Section 3
-
-
-
-
-== Testing the service
-
-You could test this service manually by starting a server and pointing a web browser at the
-`\http://localhost:9080/LibertyProject/System/properties` URL. Automated tests are a much better
-approach because they will trigger a failure if a change introduces a bug. JUnit and the JAX-RS Client
-API provide a very simple environment to test the application.
-
-You can write tests for the individual units of code outside of a running application server, or they
-can be written to call the application server directly. In this example, you will create a test that
-does the latter.
-
-Create the test class in the `src/test/java/it/io/openliberty/guides/rest/EndpointTest.java` file:
-
-[source,java]
-----
-//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=**;!comment]
-----
-
-This test class has more lines of code than the resource implementation. This situation is common.
-The test method is indicated with the `@Test` annotation.
-
-The test code needs to know some information about the application in order to make requests. The server
-port and the application context root are key, and are dictated by the server configuration. While this
-information can be hardcoded, it is better to specify it in a single place like the Maven `pom.xml`
-file. Open the `pom.xml` file to see how the application information is provided in the file:
-
-[source,xml,indent=0,role="no_copy"]
-----
-//include::finish/pom.xml[lines=15..17]
-----
-
-These Maven properties are then passed to the Java test program as a series of system properties in
-the `pom.xml` file:
-
-[source,xml,indent=0,role="no_copy"]
-----
-//include::finish/pom.xml[lines=179..182]
-----
-
-Getting the values to create a representation of the URL is simple. The test class uses the properties
-to get the application details:
-
-[source,java,indent=0,role="no_copy"]
-----
-//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=systemProperties]
-----
-
-The JAX-RS client can be used to make the REST call and convert the payload to and from a JSON-P
-representation. To get the JAX-RS client to do the conversion, the client needs to have the `JsrJsonpProvider`
-class registered with it by calling the `register` method and providing the `Class` object for the
-`JsrJsonpProvider` class:
-
-[source,java,indent=0,role="no_copy"]
-----
-//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=clientSetup]
-----
-
-To call the JAX-RS service using the JAX-RS client, you first create a `WebTarget` object by calling
-the `target` method providing the URL. To cause the HTTP request to occur first the `request` method
-on `WebTarget` and then the `get` method on the returned object need to be called. The `get` method
-call is a synchronous call that blocks until a response is received. This call returns a `Response`
-object, which can be interrogated to determine whether the request was successful:
-
-[source,java,indent=0,role="no_copy"]
-----
-//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=request]
-----
-
-The first thing to check is that a `200` response was received. The JUnit `assertEquals` method can
-be used for this. The first parameter is the error message that indicates why the test failed. The
-second parameter is the expected response code, and the third is the actual response code. It is
-important to associate the expected response code with the second parameter and the actual response
-with the third parameter. Otherwise, the error messages from JUnit will claim that the actual response
-is the expected one, which can cause confusion:
-
-[source,java,indent=0,role="no_copy"]
-----
-//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=response]
-----
-
-Check the response body to ensure it returned the right information. Since the client and the server
-are running on the same machine, it is reasonable to expect that the system properties for the local
-and remote JVM would be the same. In this case, an assertion is made that the `os.name` system property
-for both JVMs is the same. You could write additional assertions to check for more values:
-
-[source,java,indent=0,role="no_copy"]
-----
-//include::finish/src/test/java/it/io/openliberty/guides/rest/EndpointTest.java[tags=body]
-----
-
-To rebuild, run the tests, and see that the test passes, run the command: `mvn install`. The Maven
-build takes a little longer than before the test existed, but expect to see the following information
-in the output:
+The app is reloaded when you save the change. Vist the URL again:
 
 [source,role="no_copy"]
 ----
--------------------------------------------------------
- T E S T S
--------------------------------------------------------
-Running it.io.openliberty.guides.rest.EndpointTest
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.884 sec - in it.io.openliberty.guides.rest.EndpointTest
-
-Results :
-
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+http://localhost:9080/system/properties
 ----
 
-To see whether the tests detect a failure, add an assertion that you know fails, or change the existing
-assertion to a constant value that doesn't match the `os.name` system property.
+This time, instead of returning the system properties, the app throws a RuntimeException called `My forced exception`, like this:
+
+[source,role="no_copy"]
+----
+Exception thrown by application class 'io.openliberty.sample.system.SystemResource.getProperties:42'
+java.lang.RuntimeException: My forced exception
+at io.openliberty.sample.system.SystemResource.getProperties(SystemResource.java:42)
+at io.openliberty.sample.system.SystemResource$Proxy$_$$_WeldSubclass.getProperties$$super(Unknown Source)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+----
+
+In the `logs` directory, you should now see addition `ffdc` and `state` directories containing the FFDC (First Failure Data Capture - link to more info?) and the ??? logs about the RuntimeException.
+
+Remove the RuntimeException statement again and save the file and the app will return the system properties again. All without needing to restart the server.
+
+Stop the server by pressing CTRL + C.
+
+== Starting and stopping the server in the background
+
+In the previous sections, you started and stopped the server in the foreground using Maven. You can also start and stop the server in the background using Maven:
+
+[source,role="no_copy"]
+----
+liberty:start-server
+liberty:stop-server
+----
+
+== Packaging and deploying the app to another server
+
+Although it's useful to be able to easily package and run the application in a development environment, at some point you'll need to deploy the app to a server in a test or production environment. You can use Maven to package the application then move the packaged application to the `apps` or `dropins` directory of the Open Liberty server in the test or production environment.
+
+Package your app:
+
+[source,role="no_copy"]
+----
+mvn package
+----
+
+Maven creates a package called `LibertyProject.zip` in the `target` directory:
+
+[source,role="no_copy"]
+----
+...
+[INFO] Packaging server sampleAppServer.
+[INFO] Server sampleAppServer package complete in /Users/laura/github/lauracowen/sample-getting-started/finish/target/LibertyProject.zip.
+...
+----
+
+Download an Open Liberty runtime from https://openliberty.io/downloads/. Extract the downloaded ZIP file to a location on your harddrive. You have now installed the Open Liberty runtime.
+
+The `LibertyProject.zip` package contains your compiled app along with a server in a `wlp` directory. Extract the package over the Open Liberty installation (so that the `usr` directory containing your packaged app drops into the `wlp` directory of the Open Liberty runtime. The packaged `...war` file is in the `usr/servers/sampleAppServer/apps`.
+
+To start the server, in a terminal, navigate to the `wlp/bin` directory of the Open Liberty installation and start the server:
+
+[source]
+----
+cd wlp/bin
+./server start sampleAppServer
+----
+
+When the server has started, visit the app URL again:
+
+[source,role="no_copy"]
+----
+http://localhost:9080/system/properties
+----
+
+[LC: For me, this doesn't quite work - I get context not found problem and I'm not sure why.]
+
+To stop the server:
+
+[source]
+----
+./server stop sampleAppServer
+----
+
+
+MINIFY??
+
+ANYTHING ELSE WE SHOULD INTRODUCE ABOUT OPEN LIBERTY?
+
 
 == Great work! You're done!
 
-You developed a REST service by using JAX-RS, JSON-P, and Liberty.
+You've learnt the basics of deploying and updating an app on an Open Liberty server.
 
 include::{common-includes}/finish.adoc[]

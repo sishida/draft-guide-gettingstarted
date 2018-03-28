@@ -27,23 +27,30 @@ import javax.ws.rs.core.MediaType;
 @RequestScoped
 @Path("properties")
 public class SystemResource {
-	
+
 	@Inject
 	SystemConfig systemConfig;
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Timed(name = "getPropertiesTime",
-  description = "Time needed to get the properties of a system")
-  @Counted(absolute = true, monotonic = true,
-  description = "Number of times the properties of a systems is requested")
-  public Response getProperties() {
-	  if (!systemConfig.isInMaintenance()) {
-	      return Response.ok(System.getProperties()).build();
-	    } else {
-	      return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-	                     .entity("ERROR: Service is currently in maintenance.")
-	                     .build();
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Timed(name = "getPropertiesTime", description = "Time needed to get the properties of a system")
+	@Counted(absolute = true, monotonic = true, description = "Number of times the properties of a systems is requested")
+	public Response getProperties() {
+
+		// if (System.getProperties() != null) {
+
+		// 	throw new RuntimeException("My forced exception");
+		// }
+
+		if (!systemConfig.isInMaintenance()) {
+			return Response.ok(System.getProperties()).build();
+		} else {
+			return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+					.entity("ERROR: Service is currently in maintenance.").build();
+
+		}
+
 	}
-  }
+
+
 }

@@ -1,9 +1,9 @@
 FROM open-liberty as server-setup
-COPY /target/LibertyProject.zip /config/
-RUN unzip /config/LibertyProject.zip && \
-    mv /wlp/usr/servers/sampleAppServer/* /config/ && \
+COPY /target/GettingStarted.zip /config/
+RUN unzip /config/GettingStarted.zip && \
+    mv /wlp/usr/servers/GettingStartedServer/* /config/ && \
     rm -rf /config/wlp && \
-    rm -rf /config/LibertyProject.zip
+    rm -rf /config/GettingStarted.zip
 
 FROM open-liberty
 LABEL maintainer="Graham Charters" vendor="IBM" github="https://github.com/WASdev/ci.maven"

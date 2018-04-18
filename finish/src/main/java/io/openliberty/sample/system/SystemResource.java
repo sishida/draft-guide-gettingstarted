@@ -28,8 +28,8 @@ import javax.ws.rs.core.MediaType;
 @Path("properties")
 public class SystemResource {
 
-	@Inject
-	SystemConfig systemConfig;
+	//@Inject
+	//SystemConfig systemConfig;
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
@@ -42,13 +42,13 @@ public class SystemResource {
 		// 	throw new RuntimeException("My forced exception");
 		// }
 
-		if (!systemConfig.isInMaintenance()) {
+		//if (!systemConfig.isInMaintenance()) {
 			return Response.ok(System.getProperties()).build();
-		} else {
-			return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-					.entity("ERROR: Service is currently in maintenance.").build();
+		//} else {
+			//return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+					//.entity("ERROR: Service is currently in maintenance.").build();
 
-		}
+		//}
 
 	}
 

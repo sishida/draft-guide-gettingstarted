@@ -24,13 +24,13 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 @ApplicationScoped
 public class SystemHealth implements HealthCheck {
 	
-	@Inject
-	SystemConfig systemConfig;
+	//@Inject
+	//SystemConfig systemConfig;
 	
 	public boolean isHealthy() {
-	    if (systemConfig.isInMaintenance()) {
-	      return false;
-	    }
+	    //if (systemConfig.isInMaintenance()) {
+	      //return false;
+	    //}
 	     return true;
 	  }
 	

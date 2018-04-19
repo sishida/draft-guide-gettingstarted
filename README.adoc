@@ -158,7 +158,7 @@ The health endpoint now displays both the overall server status and the individu
 
 == Checking the Open Liberty server logs
 
-You can find the logs for the application's Open Liberty server in the `target/liberty/wlp/usr/servers/SampleAppServer/logs` directory, which is created automatically when the server first starts. There should currently be `console.log` and `messages.log` files in the directory which contain the console output of the running application so far.
+You can find the logs for the application's Open Liberty server in the `target/liberty/wlp/usr/servers/GettingStartedServer/logs` directory, which is created automatically when the server first starts. There should currently be `console.log` and `messages.log` files in the directory which contain the console output of the running application so far.
 
 == Starting and stopping the server in the background
 
@@ -209,7 +209,7 @@ In the `start` directory, build the Docker image from the `Dockerfile`: `docker 
 
 Run the Docker image: `docker run -p 9080:9080 -p 9443:9443 openliberty:gettingstarted`
 
-
+Access the application again: http://localhost:9080/system/properties The app is running in Docker.
 
 
 

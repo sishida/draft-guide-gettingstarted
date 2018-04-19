@@ -14,7 +14,6 @@
 package io.openliberty.sample.system;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
@@ -24,24 +23,21 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 @ApplicationScoped
 public class SystemHealth implements HealthCheck {
 	
-	//@Inject
-	//SystemConfig systemConfig;
-	
 	public boolean isHealthy() {
-	    //if (systemConfig.isInMaintenance()) {
-	      //return false;
-	    //}
 	     return true;
 	  }
 	
   @Override
   public HealthCheckResponse call() {
-    if (!isHealthy()) {
+		if (!System.getProperty("wlp.server.name").equals("GettingStartedServer")) {
       return HealthCheckResponse.named(SystemResource.class.getSimpleName())
-    		  .withData("services","not available").down().build();
+                                .withData("services", "not available")
+                                .down().build();
     }
     return HealthCheckResponse.named(SystemResource.class.getSimpleName())
-            .withData("services","available").up().build();
+                              .withData("services", "available").up()
+                              .build();
+
   }
 }
 // end::SystemHealth[]

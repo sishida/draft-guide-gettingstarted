@@ -37,8 +37,6 @@ Finally, you'll try out the Open Liberty server command to manage and package th
 
 //include::{common-includes}/gitclone.adoc[]
 
-**LC: General TODO: Tidy up naming (eg in pom.xml and Dockerfile) and make the variables in pom.xml more consistent and simple.**
-
 == Cloning and running the application on an Open Liberty server
 
 In a terminal, run the following commands to clone a simple application:
@@ -82,6 +80,7 @@ The application gets the system properties for your laptop and displays them on 
 ...
 ----
 
+
 == Updating the application code without restarting the Open Liberty server
 
 The application is configured as a 'loose application'. A 'loose application' runs in the server from its artifacts without them being packaged into the WAR file (e.g. `target/classes`, `src/main/webapp`). Open Liberty automatically monitors these artifacts and whenever they are updated (e.g. as a result of a recompile), the server updates the running application. You don't need to repeatedly stop and restart the server to see the effects of every update you make to your code. If your IDE is configured to recompile each time you save your changes, you don't need to even re-run the Maven build. If your IDE doesn't recompile each time, you can run `mvn compile`.
@@ -101,7 +100,7 @@ Update `src/main/liberty/config/server.xml` with the `mpHealth-1.0` feature:
 
 [source,xml,indent=0]
 ----
-include::finish/src/main/liberty/config/server.xml[]
+include::finish/src/main/liberty/config/server.xml[tag=features]
 ----
 
 The `mpHealth-1.0` feature, when enabled in the server, adds a `/health` endpoint to the application which displays the health of the application and each microservice within it.
@@ -161,35 +160,6 @@ The health endpoint now displays both the overall server status and the individu
 
 You can find the logs for the application's Open Liberty server in the `target/liberty/wlp/usr/servers/SampleAppServer/logs` directory, which is created automatically when the server first starts. There should currently be `console.log` and `messages.log` files in the directory which contain the console output of the running application so far.
 
-Now, force a RuntimeException by editing the `SystemResource.java` class and uncommenting the following `if` statement at the very start of the `getProperties()` method:
-
-[source,java,indent=0]
-----
-if (System.getProperties() != null) {
-   throw new RuntimeException("My forced exception");
-	}
-----
-
-The application is reloaded when you save the change. Access the application again: http://localhost:9080/system/properties
-
-
-This time, instead of returning the system properties, the application throws a RuntimeException called `My forced exception`, like this:
-
-[source,role="no_copy"]
-----
-Exception thrown by application class 'io.openliberty.sample.system.SystemResource.getProperties:42'
-java.lang.RuntimeException: My forced exception
-at io.openliberty.sample.system.SystemResource.getProperties(SystemResource.java:42)
-at io.openliberty.sample.system.SystemResource$Proxy$_$$_WeldSubclass.getProperties$$super(Unknown Source)
-at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-----
-
-In the `logs` directory, you should now see addition `ffdc` and `state` directories containing the FFDC (First Failure Data Capture - link to more info?) and the ??? logs about the RuntimeException.
-
-Comment out the RuntimeException statement again and save the file and the application will return the system properties again.
-
-Stop the server by pressing CTRL + C.
-
 == Starting and stopping the server in the background
 
 In the previous sections, you started and stopped the server in the foreground using Maven. You can also start and stop the server in the background using Maven:
@@ -202,60 +172,42 @@ liberty:stop-server
 
 == Try the minimal runnable JAR
 
-So far, Liberty has been running out of the `target/liberty` directory. This directory effectively contains an installed Liberty server and deployed application. The final product of the Maven build is a 'server package' for use in a Continuous Integration (CI) pipeline and, ultimately, a production deployment. Open Liberty supports a number of different 'server packages'. The sample application currently generates a runnable JAR, configured by the following line in the `pom.xml`:
+So far, Open Liberty has been running out of the `target/liberty` directory. This directory effectively contains an installed Liberty server and deployed application. The final product of the Maven build is a 'server package' for use in a Continuous Integration (CI) pipeline and, ultimately, a production deployment. Open Liberty supports a number of different 'server packages'. The sample application currently generates a `usr` package; the package contains only the servers to be exracted on to an Open Liberty installation. You can see this in the following line in the `pom.xml`:
 
 [source,xml,indent=0]
 ----
 include::finish/pom.xml[tag=packagingtype]
 ----
 
-By default, the runnable JAR includes all the features installed with Open Liberty so the package (`target/LibertyProject.jar`) is about 97 MB.
+You can, alternatively, package the server with a full installation of Open Liberty in a runnable JAR file. Run the following command to package your app as a runnable JAR: `mvn -P runnable-package install`
 
-Edit the `<packaging.typ>` line in the `pom.xml` to 'minify' the package size:
+This command uses the `runnable-package` profile (defined in `pom.xml`) to temporarily override the `packaging.type` value of `usr` with `runnable` instead.
 
-[source,xml,indent=0]
-----
-<packaging.type>minify,runnable</packaging.type>
-----
+The `GettingStarted.jar` file is put in the `target` directory instead of a ZIP file. By default, the runnable JAR includes all the features installed with Open Liberty (the whole of Java EE 7 and MicroProfile 1.3) so the JAR file is about 97 MB. You can instead create a minimal server package that contains only the features configured in the server by running the following command: `mvn -P minify-runnable-package install`
 
-Run the `mvn clean package` command to create a new `LibertyProject.jar` file.
+The `server.xml` includes only the features needed by the application and so only those capabilities are included in the package (as well as any they depend on and any required for production deployment). This means the original 97 MB Open Liberty package is now about 39 MB.
 
-A minimal server package contains only the features configured in the server. The `server.xml` includes only the features needed by the application and so only those capabilities are included in the package (as well as any they depend on and any required for production deployment). This means the original 97 MB Open Liberty package is now less than 39MB.
-
-[source,xml,indent=0]
-----
-include::finish/src/main/liberty/config/server.xml[tag=features]
-----
+**LC: Check the file sizes when minify is working.**
 
 If the server is already running, stop it (`mvn liberty:stop-server` or CTRL + C).
 
-Go into the `target` directory and run the runnable JAR: `java -jar mpserver.jar`
+Go into the `target` directory and run the runnable JAR: `java -jar GettingStarted.jar`
 
 Access the application again: http://localhost:9080/system/properties The app is running from the minimal runnable JAR.
 
 == Run the application in a Docker image
 
-There is a Dockerfile in the `resources` directory. This Dockerfile is based on the Open Liberty docker image from Docker Hub and adds in the project's server configuration and applications from an Open Liberty 'usr server package'. A usr server package contains only an application and server configuration (not a runnable server) and is designed to be unzipped over an existing Open Liberty installation.
+There is a Dockerfile in root of the project. This Dockerfile is based on the Open Liberty docker image from Docker Hub and adds in the project's server configuration and applications from an Open Liberty 'usr server package'. A usr server package contains only an application and server configuration (not a runnable server) and is designed to be unzipped over an existing Open Liberty installation.
 
-To build a usr server package instead of the minimal runnable JAR, edit the `<packaging.type>` line in the `pom.xml` again to be:
+Build a usr server package by running the original packaging command: `mvn clean package`
 
-[source,xml,indent=0]
-----
-<packaging.type>usr</packaging.type>
-----
-
-**LC: Or should I add the 'usr-package' profile into the pom.xml and run the 'mvn -P usr-package install' command as Graham did? Which is best practice?**
-
-Run the packaging command to create the usr server  package: `mvn clean package`
-
-This creates a ZIP file containing just the `usr` directory and its contents `target/LibertyProject.zip` which you can now run in Docker.
+This creates a `target/GettingStarted.zip` containing just the `usr` directory and its contents which you can now run in Docker.
 
 If the server is already running, stop it (`mvn liberty:stop-server` or CTRL + C).
 
-In the `resources` directory, build the Docker image from the `Dockerfile`: `docker build -t openliberty:gettingstarted .`
+In the `start` directory, build the Docker image from the `Dockerfile`: `docker build -t openliberty:gettingstarted .`
 
-
-Run the Docker image: `docker run -p 9080:9080 -p 9443:9443 my-demo:gettingstarted`
+Run the Docker image: `docker run -p 9080:9080 -p 9443:9443 openliberty:gettingstarted`
 
 
 

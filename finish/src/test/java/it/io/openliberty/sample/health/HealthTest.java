@@ -17,7 +17,6 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 import javax.json.JsonArray;
-import org.junit.After;
 import org.junit.Test;
 
 public class HealthTest {
@@ -43,14 +42,6 @@ public class HealthTest {
     checkServicesStates(dataWhenServicesUP, servicesStates);
   }
 
-  @Test
-  public void testIfServicesAreDown() {
-    servicesStates = HealthTestUtil.connectToHealthEnpoint(200);
-    checkServicesStates(dataWhenServicesUP, servicesStates);
-    HealthTestUtil.changeProperty(HealthTestUtil.INV_MAINTENANCE_FALSE, HealthTestUtil.INV_MAINTENANCE_TRUE);
-    //servicesStates = HealthTestUtil.connectToHealthEnpoint(503);
-    //checkServicesStates(dataWhenServicesDown, servicesStates);
-  }
 
   private void checkServicesStates(HashMap<String, String> testData, JsonArray servicesStates) {
     testData.forEach((service, expectedState) -> {
@@ -58,11 +49,6 @@ public class HealthTest {
                    HealthTestUtil.getActualState(service, servicesStates));
     });
 
-  }
-
-  @After
-  public void teardown() {
-    HealthTestUtil.cleanUp();
   }
 
 }
